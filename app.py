@@ -18,11 +18,11 @@ st.header('Custom Llama2-Powered Chatbot :robot_face:')
 @st.cache_resource()
 def load_llm():
 
-    # load the llm with ctransformers
-    llm = CTransformers(model='models/llama-2-7b-chat.ggmlv3.q2_K.bin', # model available here: https://huggingface.co/TheBloke/Llama-2-7B-Chat-GGML/tree/main
-                    model_type='llama',
-                    config={'max_new_tokens': 256, 'temperature': 0})
-    return llm
+    return CTransformers(
+        model='models/llama-2-7b-chat.ggmlv3.q2_K.bin',  # model available here: https://huggingface.co/TheBloke/Llama-2-7B-Chat-GGML/tree/main
+        model_type='llama',
+        config={'max_new_tokens': 256, 'temperature': 0},
+    )
 
 @st.cache_resource()
 def load_vector_store():
@@ -31,8 +31,7 @@ def load_vector_store():
     embeddings = HuggingFaceEmbeddings(
         model_name="sentence-transformers/all-MiniLM-L6-v2",
         model_kwargs={'device': 'cpu'})
-    db = FAISS.load_local("faiss", embeddings)
-    return db
+    return FAISS.load_local("faiss", embeddings)
 
 @st.cache_data()
 def load_prompt_template():
@@ -46,11 +45,9 @@ def load_prompt_template():
     Answer:
     """
 
-    prompt = PromptTemplate(
-    template=template,
-    input_variables=['context', 'question'])
-
-    return prompt 
+    return PromptTemplate(
+        template=template, input_variables=['context', 'question']
+    ) 
 
 def create_qa_chain():
 
@@ -61,13 +58,13 @@ def create_qa_chain():
 
     # create the qa_chain
     retriever = db.as_retriever(search_kwargs={'k': 2})
-    qa_chain = RetrievalQA.from_chain_type(llm=llm,
-                                        chain_type='stuff',
-                                        retriever=retriever,
-                                        return_source_documents=True,
-                                        chain_type_kwargs={'prompt': prompt})
-    
-    return qa_chain
+    return RetrievalQA.from_chain_type(
+        llm=llm,
+        chain_type='stuff',
+        retriever=retriever,
+        return_source_documents=True,
+        chain_type_kwargs={'prompt': prompt},
+    )
 
 def generate_response(query, qa_chain):
 
@@ -77,9 +74,11 @@ def generate_response(query, qa_chain):
 
 def get_user_input():
 
-    # get the user query
-    input_text = st.text_input('Ask me anything about the use of computer vision in sports!', "", key='input')
-    return input_text
+    return st.text_input(
+        'Ask me anything about the use of computer vision in sports!',
+        "",
+        key='input',
+    )
 
 
 
@@ -93,12 +92,7 @@ if 'generated' not in st.session_state:
 if 'past' not in st.session_state:
     st.session_state['past'] = []
 
-# get the user query
-user_input = get_user_input()
-
-
-if user_input:
-
+if user_input := get_user_input():
     # generate response to the user input
     response = generate_response(query=user_input, qa_chain=qa_chain)
 
@@ -111,4 +105,4 @@ if user_input:
 if st.session_state['generated']:
     for i in range(len(st.session_state['generated']) -1, -1, -1):
         message(st.session_state['generated'][i], key=str(i))
-        message(st.session_state['past'][i], is_user=True, key=str(i) + '_user')
+        message(st.session_state['past'][i], is_user=True, key=f'{str(i)}_user')

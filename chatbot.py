@@ -8,18 +8,18 @@ from langchain.chains import RetrievalQA
 
 # load the language model
 def load_llm():
-    llm = CTransformers(model='models/llama-2-7b-chat.ggmlv3.q2_K.bin', # model available here: https://huggingface.co/TheBloke/Llama-2-7B-Chat-GGML/tree/main
-                    model_type='llama',
-                    config={'max_new_tokens': 256, 'temperature': 0})
-    return llm
+    return CTransformers(
+        model='models/llama-2-7b-chat.ggmlv3.q2_K.bin',  # model available here: https://huggingface.co/TheBloke/Llama-2-7B-Chat-GGML/tree/main
+        model_type='llama',
+        config={'max_new_tokens': 256, 'temperature': 0},
+    )
 
 def load_vector_store():
     # load the interpreted information from the local database
     embeddings = HuggingFaceEmbeddings(
         model_name="sentence-transformers/all-MiniLM-L6-v2",
         model_kwargs={'device': 'cpu'})
-    db = FAISS.load_local("faiss", embeddings)
-    return db
+    return FAISS.load_local("faiss", embeddings)
 
 
 def create_prompt_template():
@@ -32,10 +32,9 @@ def create_prompt_template():
     Answer:
     """
 
-    prompt = PromptTemplate(
-        template=template,
-        input_variables=['context', 'question'])
-    return prompt
+    return PromptTemplate(
+        template=template, input_variables=['context', 'question']
+    )
 
 def create_qa_chain():
 
@@ -47,13 +46,13 @@ def create_qa_chain():
 
     # create the qa_chain
     retriever = db.as_retriever(search_kwargs={'k': 2})
-    qa_chain = RetrievalQA.from_chain_type(llm=llm,
-                                        chain_type='stuff',
-                                        retriever=retriever,
-                                        return_source_documents=True,
-                                        chain_type_kwargs={'prompt': prompt})
-    
-    return qa_chain
+    return RetrievalQA.from_chain_type(
+        llm=llm,
+        chain_type='stuff',
+        retriever=retriever,
+        return_source_documents=True,
+        chain_type_kwargs={'prompt': prompt},
+    )
 
 
 def generate_response(query, qa_chain):
